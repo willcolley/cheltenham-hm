@@ -209,8 +209,6 @@ input[type=file] { display: none; }
     <button class="tab active" onclick="switchTab('plan')">Plan</button>
     <button class="tab" onclick="switchTab('pbs')">PBs</button>
     <button class="tab" onclick="switchTab('progress')">Progress</button>
-    <button class="tab" onclick="switchTab('routes')">Routes</button>
-    <button class="tab" onclick="switchTab('connect')">Connect</button>
     <button class="tab" onclick="switchTab('coach')">Coach</button>
     <button class="tab" onclick="switchTab('customize')">Customize</button>
   </div>
@@ -236,67 +234,6 @@ input[type=file] { display: none; }
         <div class="progress-header"><span class="progress-label">All 12 weeks</span><span class="progress-val" id="overall-pct">0%</span></div>
         <div class="progress-track"><div class="progress-fill" id="overall-bar" style="background:var(--blue);width:0%"></div></div>
         <div id="weekly-bars"></div>
-      </div>
-    </div>
-
-    <div id="panel-routes" class="panel">
-      <div class="route-upload-zone" id="upload-zone" onclick="document.getElementById('gpx-input').click()">
-        <input type="file" id="gpx-input" accept=".gpx,.fit,.tcx" multiple onchange="handleRouteUpload(event)"/>
-        <div class="route-upload-icon">📍</div>
-        <div class="route-upload-title">Upload GPX / FIT / TCX</div>
-        <div class="route-upload-sub">Tap to choose files · drag &amp; drop supported</div>
-      </div>
-      <div class="card" style="margin-bottom:10px;">
-        <div class="card-label">Garmin transfer</div>
-        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px;">To send routes to your Garmin: connect your device via USB, then tap "Send to Garmin" on any route below. On mobile, use <strong style="color:var(--text)">Garmin Connect</strong> or <strong style="color:var(--text)">Garmin Express</strong> to sync — tap the button to open the app.</p>
-        <button class="connect-btn" style="width:100%;" onclick="openGarminConnect()">Open Garmin Connect ↗</button>
-      </div>
-      <div class="route-list" id="route-list"></div>
-    </div>
-
-    <div id="panel-connect" class="panel">
-      <div class="card" id="strava-connect-card">
-        <div class="card-label">Strava</div>
-        <div id="strava-disconnected">
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-            <div class="connect-logo strava-logo" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(252,76,2,0.15);">🏃</div>
-            <div>
-              <div style="font-size:14px;font-weight:500;">Connect Strava</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:2px;">Auto-import your runs into your training plan</div>
-            </div>
-          </div>
-          <button onclick="connectStrava()" style="width:100%;padding:12px;background:#fc4c02;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);">Connect with Strava</button>
-        </div>
-        <div id="strava-connected" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:36px;height:36px;border-radius:8px;background:rgba(252,76,2,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;">🏃</div>
-              <div>
-                <div style="font-size:13px;font-weight:500;" id="strava-athlete-name">Connected</div>
-                <div style="font-size:11px;color:var(--green);font-family:var(--mono);">● connected</div>
-              </div>
-            </div>
-            <button onclick="disconnectStrava()" style="padding:6px 12px;border:1px solid rgba(255,95,95,0.3);border-radius:8px;background:none;color:var(--red);font-size:12px;cursor:pointer;font-family:var(--mono);">Disconnect</button>
-          </div>
-          <button onclick="fetchStravaActivities()" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;font-family:var(--mono);" id="fetch-btn">Sync recent runs ↻</button>
-        </div>
-      </div>
-
-      <div class="card" id="strava-activities-card" style="display:none;">
-        <div class="card-label">Recent Strava runs</div>
-        <div id="strava-activities-list"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-label">Garmin</div>
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-          <div style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(0,125,195,0.15);">⌚</div>
-          <div>
-            <div style="font-size:14px;font-weight:500;">Garmin Connect</div>
-            <div style="font-size:12px;color:var(--text2);margin-top:2px;">Upload routes via the Routes tab, sync via Garmin Connect app</div>
-          </div>
-        </div>
-        <button onclick="window.open('https://connect.garmin.com','_blank')" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;font-family:var(--mono);">Open Garmin Connect ↗</button>
       </div>
     </div>
 
@@ -344,6 +281,11 @@ input[type=file] { display: none; }
             <div>
               <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Your name</div>
               <input type="text" id="setting-name" class="modal-input" style="margin:0;" placeholder="Runner" onchange="saveSetting('name',this.value)"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Anthropic API key</div>
+              <input type="password" id="setting-api-key" class="modal-input" style="margin:0;" placeholder="sk-ant-..." onchange="saveSetting('apiKey',this.value)"/>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono);">Get yours at console.anthropic.com · $5 one-time top-up</div>
             </div>
             <button onclick="exportData()" style="background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Export all data (JSON)</button>
             <button onclick="resetData()" style="background:none;border:1px solid rgba(255,95,95,0.3);color:var(--red);border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Reset all data</button>
@@ -441,6 +383,22 @@ try { const s = localStorage.getItem('chm_state_v2'); if(s) state = {...state, .
 function save() { try { localStorage.setItem('chm_state_v2', JSON.stringify(state)); } catch(e){} }
 function saveSetting(k,v) { state.settings[k]=v; save(); updateHeader(); }
 
+function loadSavedSettings() {
+  if (state.settings.apiKey) {
+    const el = document.getElementById('setting-api-key');
+    if (el) el.value = state.settings.apiKey;
+  }
+  if (state.settings.raceDate) {
+    const el = document.getElementById('setting-race-date');
+    if (el) el.value = state.settings.raceDate;
+  }
+  if (state.settings.targetTime) {
+    const el = document.getElementById('setting-target');
+    if (el) el.value = state.settings.targetTime;
+  }
+}
+setTimeout(loadSavedSettings, 100);
+
 function updateHeader() {
   const d = new Date(state.settings.raceDate);
   const diff = Math.max(0, Math.ceil((d - new Date()) / 86400000));
@@ -451,15 +409,13 @@ updateHeader();
 
 function switchTab(t) {
   document.querySelectorAll('.tab').forEach((el,i) => {
-    const names = ['plan','pbs','progress','routes','connect','coach','customize'];
+    const names = ['plan','pbs','progress','coach','customize'];
     el.classList.toggle('active', names[i]===t);
   });
   document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
   if(t==='pbs') renderPBs();
   if(t==='progress') renderProgress();
-  if(t==='routes') renderRoutes();
-  if(t==='connect') renderStravaUI();
 }
 
 // ── PLAN ──
@@ -617,190 +573,6 @@ function renderProgress() {
   }).join('');
 }
 
-// ── ROUTES ──
-function renderRoutes() {
-  const list = document.getElementById('route-list');
-  if(!state.routes.length) {
-    list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px;font-family:var(--mono);">No routes uploaded yet</div>';
-    return;
-  }
-  list.innerHTML = state.routes.map((r,i)=>`
-    <div class="route-item">
-      <div class="route-icon">📍</div>
-      <div class="route-info">
-        <div class="route-name">${r.name}</div>
-        <div class="route-meta">${r.type} · ${r.size}</div>
-      </div>
-      <div class="route-actions">
-        <button class="route-btn garmin" onclick="sendToGarmin(${i})">Garmin</button>
-        <button class="route-btn" onclick="deleteRoute(${i})">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function handleRouteUpload(e) {
-  const files = Array.from(e.target.files);
-  files.forEach(f => {
-    state.routes.push({ name:f.name, type:f.name.split('.').pop().toUpperCase(), size: (f.size/1024).toFixed(0)+'KB', data: null });
-  });
-  save(); renderRoutes();
-  e.target.value='';
-}
-
-function deleteRoute(i) { state.routes.splice(i,1); save(); renderRoutes(); }
-
-function sendToGarmin(i) {
-  const r = state.routes[i];
-  alert(`To send "${r.name}" to your Garmin:\n\n1. Connect Garmin via USB\n2. Copy the file to: Garmin/NewFiles/\n\nOr open Garmin Connect and import the file there.`);
-}
-function openGarminConnect() { window.open('https://connect.garmin.com','_blank'); }
-
-// Drag and drop
-const zone = document.getElementById('upload-zone');
-zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
-zone.addEventListener('dragleave', ()=>zone.classList.remove('drag'));
-zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('drag'); const dt={files:e.dataTransfer.files}; handleRouteUpload({target:dt,target:{files:e.dataTransfer.files,value:''}}); });
-
-// ── STRAVA OAUTH ──
-const STRAVA_CLIENT_ID = '224531';
-const STRAVA_CLIENT_SECRET = '1490d475a83bdb9d4c6d5f81e36b735ff0198a82';
-const STRAVA_REDIRECT = 'https://cheltenham-o75nr6fwm-willcolleys-projects.vercel.app';
-
-function connectStrava() {
-  const scope = 'read,activity:read_all';
-  const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=${scope}`;
-  window.location.href = url;
-}
-
-function disconnectStrava() {
-  delete state.strava;
-  save();
-  renderStravaUI();
-}
-
-function renderStravaUI() {
-  const connected = state.strava?.access_token;
-  document.getElementById('strava-disconnected').style.display = connected ? 'none' : 'block';
-  document.getElementById('strava-connected').style.display = connected ? 'block' : 'none';
-  document.getElementById('strava-activities-card').style.display = connected ? 'block' : 'none';
-  if (connected && state.strava.athlete_name) {
-    document.getElementById('strava-athlete-name').textContent = state.strava.athlete_name;
-  }
-}
-
-async function ensureFreshToken() {
-  if (!state.strava) return null;
-  const now = Math.floor(Date.now() / 1000);
-  if (state.strava.expires_at > now + 60) return state.strava.access_token;
-  try {
-    const res = await fetch('https://www.strava.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: STRAVA_CLIENT_ID,
-        client_secret: STRAVA_CLIENT_SECRET,
-        refresh_token: state.strava.refresh_token,
-        grant_type: 'refresh_token'
-      })
-    });
-    const data = await res.json();
-    state.strava.access_token = data.access_token;
-    state.strava.refresh_token = data.refresh_token;
-    state.strava.expires_at = data.expires_at;
-    save();
-    return data.access_token;
-  } catch(e) { return null; }
-}
-
-async function fetchStravaActivities() {
-  const btn = document.getElementById('fetch-btn');
-  btn.textContent = 'Syncing…';
-  const token = await ensureFreshToken();
-  if (!token) { btn.textContent = 'Sync recent runs ↻'; return; }
-  try {
-    const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=20', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    const activities = await res.json();
-    const runs = activities.filter(a => a.type === 'Run' || a.sport_type === 'Run');
-    renderStravaActivities(runs);
-    btn.textContent = 'Sync recent runs ↻';
-  } catch(e) { btn.textContent = 'Sync failed — try again'; }
-}
-
-function renderStravaActivities(runs) {
-  const list = document.getElementById('strava-activities-list');
-  if (!runs.length) { list.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:12px;">No recent runs found</div>'; return; }
-  list.innerHTML = runs.map(r => {
-    const date = new Date(r.start_date_local).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
-    const km = (r.distance / 1000).toFixed(1);
-    const mins = Math.floor(r.moving_time / 60);
-    const secs = r.moving_time % 60;
-    const time = `${mins}:${String(secs).padStart(2,'0')}`;
-    const pacePerKm = r.distance > 0 ? r.moving_time / (r.distance / 1000) : 0;
-    const pm = Math.floor(pacePerKm / 60);
-    const ps = Math.round(pacePerKm % 60);
-    const pace = pacePerKm > 0 ? `${pm}:${String(ps).padStart(2,'0')}/km` : '';
-    return `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
-          <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:2px;">${date} · ${km}km · ${pace}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:13px;font-family:var(--mono);color:var(--blue);">${time}</div>
-          <button onclick="logStravaRun('${time}','${km}km ${r.name}')" style="font-size:10px;font-family:var(--mono);padding:3px 8px;border:1px solid var(--border2);border-radius:6px;background:none;color:var(--text3);cursor:pointer;margin-top:3px;">+ log</button>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function logStravaRun(time, name) {
-  alert(`To log this run, go to the Plan tab, find the matching session and tap "+ time" to enter ${time}.`);
-}
-
-// Handle OAuth callback on page load
-async function handleStravaCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const error = params.get('error');
-
-  if (error) {
-    window.history.replaceState({}, '', '/');
-    return;
-  }
-
-  if (code) {
-    window.history.replaceState({}, '', '/');
-    try {
-      const res = await fetch('https://www.strava.com/oauth/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: STRAVA_CLIENT_ID,
-          client_secret: STRAVA_CLIENT_SECRET,
-          code,
-          grant_type: 'authorization_code'
-        })
-      });
-      const data = await res.json();
-      if (data.access_token) {
-        state.strava = {
-          access_token: data.access_token,
-          refresh_token: data.refresh_token,
-          expires_at: data.expires_at,
-          athlete_name: data.athlete.firstname + ' ' + data.athlete.lastname,
-          athlete_id: data.athlete.id,
-        };
-        save();
-        switchTab('connect');
-      }
-    } catch(e) { console.error('Strava auth error', e); }
-  }
-}
-handleStravaCallback();
-
 // ── COACH ──
 async function sendCoach() {
   const input = document.getElementById('coach-input');
@@ -822,10 +594,12 @@ async function sendCoach() {
     history.push({role:el.classList.contains('user')?'user':'assistant',content:el.textContent});
   });
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[...history,{role:'user',content:msg}]})});
+    const apiKey = state.settings.apiKey;
+    if (!apiKey) { load.className='ai-msg bot'; load.textContent='Add your Anthropic API key in the Customize tab first.'; return; }
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[...history,{role:'user',content:msg}]})});
     const d = await res.json();
     load.className='ai-msg bot'; load.textContent=d.content?.[0]?.text||'Try again!';
-  } catch(e) { load.className='ai-msg bot'; load.textContent='Connection error. Try again.'; }
+  } catch(e) { load.className='ai-msg bot'; load.textContent='Connection error: ' + e.message; }
   container.scrollTop=99999;
 }
 
@@ -844,7 +618,9 @@ async function sendCustomize() {
   const sys = `You are a code assistant helping update a running training PWA. The user wants to modify their app. Describe the change you've made in plain English (1-2 sentences), then provide ONLY the specific code change needed as a diff or replacement snippet. Do not reproduce the entire HTML. Be concise and practical. If they ask for something requiring a full rebuild, suggest they describe the change and you'll provide the key code snippet to paste in.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sys,messages:[{role:'user',content:`My current app is a running training PWA. I want to make this change: ${msg}\n\nPlease describe the change and provide the specific code I need to update.`}]})});
+    const apiKey = state.settings.apiKey;
+    if (!apiKey) { load.className='ai-msg bot'; load.textContent='Add your Anthropic API key in the Customize tab first.'; return; }
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sys,messages:[{role:'user',content:`My current app is a running training PWA. I want to make this change: ${msg}\n\nPlease describe the change and provide the specific code I need to update.`}]})});
     const d = await res.json();
     load.className='ai-msg bot'; load.textContent=d.content?.[0]?.text||'Try again!';
   } catch(e) { load.className='ai-msg bot'; load.textContent='Connection error.'; }
