@@ -664,7 +664,7 @@ zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('dr
 
 // ── STRAVA OAUTH ──
 const STRAVA_CLIENT_ID = '224531';
-const STRAVA_REDIRECT = window.location.origin + '/api/strava-callback';
+const STRAVA_REDIRECT = 'https://cheltenham-o75nr6fwm-willcolleys-projects.vercel.app/api/strava-callback';
 
 function connectStrava() {
   const scope = 'read,activity:read_all';
