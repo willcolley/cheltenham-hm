@@ -598,6 +598,7 @@ async function sendCoach() {
     if (!apiKey) { load.className='ai-msg bot'; load.textContent='Add your Anthropic API key in the Customize tab first.'; return; }
     const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[...history,{role:'user',content:msg}]})});
     const d = await res.json();
+    if (d.error) { load.className='ai-msg bot'; load.textContent='Error: ' + d.error.message; return; }
     load.className='ai-msg bot'; load.textContent=d.content?.[0]?.text||'Try again!';
   } catch(e) { load.className='ai-msg bot'; load.textContent='Connection error: ' + e.message; }
   container.scrollTop=99999;
