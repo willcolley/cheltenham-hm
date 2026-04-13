@@ -664,7 +664,8 @@ zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('dr
 
 // ── STRAVA OAUTH ──
 const STRAVA_CLIENT_ID = '224531';
-const STRAVA_REDIRECT = 'https://cheltenham-o75nr6fwm-willcolleys-projects.vercel.app/api/strava-callback';
+const STRAVA_CLIENT_SECRET = '1490d475a83bdb9d4c6d5f81e36b735ff0198a82';
+const STRAVA_REDIRECT = 'https://cheltenham-o75nr6fwm-willcolleys-projects.vercel.app';
 
 function connectStrava() {
   const scope = 'read,activity:read_all';
@@ -693,10 +694,15 @@ async function ensureFreshToken() {
   const now = Math.floor(Date.now() / 1000);
   if (state.strava.expires_at > now + 60) return state.strava.access_token;
   try {
-    const res = await fetch('/api/strava-refresh', {
+    const res = await fetch('https://www.strava.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: state.strava.refresh_token })
+      body: JSON.stringify({
+        client_id: STRAVA_CLIENT_ID,
+        client_secret: STRAVA_CLIENT_SECRET,
+        refresh_token: state.strava.refresh_token,
+        grant_type: 'refresh_token'
+      })
     });
     const data = await res.json();
     state.strava.access_token = data.access_token;
@@ -755,26 +761,42 @@ function logStravaRun(time, name) {
 }
 
 // Handle OAuth callback on page load
-function handleStravaCallback() {
-  const hash = window.location.hash;
-  if (hash.includes('strava=')) {
-    try {
-      const b64 = hash.split('strava=')[1];
-      const params = new URLSearchParams(atob(b64));
-      state.strava = {
-        access_token: params.get('access_token'),
-        refresh_token: params.get('refresh_token'),
-        expires_at: parseInt(params.get('expires_at')),
-        athlete_name: params.get('athlete_name'),
-        athlete_id: params.get('athlete_id'),
-      };
-      save();
-      window.location.hash = '';
-      switchTab('connect');
-    } catch(e) {}
-  }
-  if (window.location.search.includes('strava_error')) {
+async function handleStravaCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+
+  if (error) {
     window.history.replaceState({}, '', '/');
+    return;
+  }
+
+  if (code) {
+    window.history.replaceState({}, '', '/');
+    try {
+      const res = await fetch('https://www.strava.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: STRAVA_CLIENT_ID,
+          client_secret: STRAVA_CLIENT_SECRET,
+          code,
+          grant_type: 'authorization_code'
+        })
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        state.strava = {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: data.expires_at,
+          athlete_name: data.athlete.firstname + ' ' + data.athlete.lastname,
+          athlete_id: data.athlete.id,
+        };
+        save();
+        switchTab('connect');
+      }
+    } catch(e) { console.error('Strava auth error', e); }
   }
 }
 handleStravaCallback();
