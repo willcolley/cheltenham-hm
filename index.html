@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Cheltenham HM"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<title>Cheltenham HM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg2: #141414;
+  --bg3: #1e1e1e;
+  --bg4: #282828;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0f0f0;
+  --text2: #888;
+  --text3: #555;
+  --blue: #4a9eff;
+  --blue-dim: rgba(74,158,255,0.12);
+  --green: #3ecf8e;
+  --green-dim: rgba(62,207,142,0.12);
+  --amber: #f5a623;
+  --amber-dim: rgba(245,166,35,0.12);
+  --red: #ff5f5f;
+  --red-dim: rgba(255,95,95,0.12);
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; }
+
+/* Layout */
+.app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.header { padding: calc(var(--safe-top) + 16px) 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.header-title { font-size: 11px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+.header-race { font-size: 20px; font-weight: 600; }
+.header-meta { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+.header-countdown { text-align: right; }
+.header-days { font-size: 28px; font-weight: 600; font-family: var(--mono); color: var(--blue); line-height: 1; }
+.header-days-label { font-size: 10px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 10px 16px; font-size: 12px; font-family: var(--mono); cursor: pointer; border: none; background: none; color: var(--text3); white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.05em; }
+.tab.active { color: var(--text); border-bottom-color: var(--blue); }
+.tab:hover:not(.active) { color: var(--text2); }
+
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-bottom) + 20px); }
+.panel { display: none; padding: 16px; }
+.panel.active { display: block; }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+.card-label { font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+
+/* Plan */
+.week-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.week-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; }
+.week-header:hover { background: var(--bg3); }
+.week-left { display: flex; align-items: center; gap: 10px; }
+.week-num { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.week-name { font-size: 14px; font-weight: 500; }
+.week-phase { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 20px; }
+.ph1 { background: var(--blue-dim); color: var(--blue); }
+.ph2 { background: var(--amber-dim); color: var(--amber); }
+.ph3 { background: var(--red-dim); color: var(--red); }
+.week-right { display: flex; align-items: center; gap: 8px; }
+.week-dots { display: flex; gap: 3px; }
+.week-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--bg4); }
+.week-dot.done { background: var(--green); }
+.week-chevron { color: var(--text3); font-size: 12px; transition: transform 0.2s; }
+.week-card.open .week-chevron { transform: rotate(180deg); }
+.week-runs { display: none; border-top: 1px solid var(--border); }
+.week-card.open .week-runs { display: block; }
+.run-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.run-row:last-child { border-bottom: none; }
+.run-cb { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border2); background: none; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.run-cb.checked { background: var(--green); border-color: var(--green); }
+.run-cb.checked::after { content: '✓'; color: #000; font-size: 11px; font-weight: 700; }
+.run-info { flex: 1; min-width: 0; }
+.run-name { font-size: 13px; font-weight: 500; }
+.run-desc { font-size: 11px; color: var(--text2); margin-top: 1px; font-family: var(--mono); }
+.run-time-btn { font-size: 11px; font-family: var(--mono); padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border2); background: none; color: var(--text3); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+.run-time-btn.logged { color: var(--blue); border-color: rgba(74,158,255,0.3); background: var(--blue-dim); }
+.run-time-btn:hover { border-color: var(--border2); color: var(--text2); }
+
+/* PBs */
+.pb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pb-item { background: var(--bg3); border-radius: 10px; padding: 14px; cursor: pointer; border: 1px solid transparent; transition: border-color 0.2s; }
+.pb-item:hover { border-color: var(--border2); }
+.pb-dist { font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.pb-val { font-size: 24px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+.pb-val.empty { font-size: 14px; color: var(--text3); padding-top: 4px; }
+.pb-pace { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 3px; }
+.pb-edit-row { display: none; margin-top: 8px; }
+.pb-edit-row.show { display: flex; gap: 6px; }
+.pb-edit-row input { flex: 1; background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: var(--mono); color: var(--text); }
+.pb-edit-row button { padding: 6px 10px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; background: var(--blue); color: #fff; font-family: var(--mono); }
+
+/* Progress */
+.progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.progress-label { font-size: 12px; color: var(--text2); }
+.progress-val { font-size: 12px; font-family: var(--mono); color: var(--text3); }
+.progress-track { background: var(--bg4); border-radius: 4px; height: 4px; margin-bottom: 14px; }
+.progress-fill { height: 4px; border-radius: 4px; transition: width 0.4s ease; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.stat-cell { background: var(--bg3); border-radius: 10px; padding: 12px; text-align: center; }
+.stat-n { font-size: 22px; font-weight: 600; font-family: var(--mono); }
+.stat-l { font-size: 10px; color: var(--text3); margin-top: 2px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Routes */
+.route-upload-zone { border: 1.5px dashed var(--border2); border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px; }
+.route-upload-zone:hover, .route-upload-zone.drag { border-color: var(--blue); background: var(--blue-dim); }
+.route-upload-icon { font-size: 28px; margin-bottom: 8px; }
+.route-upload-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.route-upload-sub { font-size: 12px; color: var(--text2); }
+.route-list { display: flex; flex-direction: column; gap: 8px; }
+.route-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.route-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--blue-dim); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.route-info { flex: 1; min-width: 0; }
+.route-name { font-size: 13px; font-weight: 500; }
+.route-meta { font-size: 11px; color: var(--text2); font-family: var(--mono); margin-top: 2px; }
+.route-actions { display: flex; gap: 6px; }
+.route-btn { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border2); background: none; color: var(--text2); font-size: 11px; font-family: var(--mono); cursor: pointer; transition: all 0.15s; }
+.route-btn:hover { color: var(--text); border-color: var(--text3); }
+.route-btn.garmin { border-color: rgba(74,158,255,0.3); color: var(--blue); background: var(--blue-dim); }
+
+/* Connect */
+.connect-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.connect-item:last-child { border-bottom: none; }
+.connect-logo { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.strava-logo { background: rgba(252,76,2,0.15); }
+.garmin-logo { background: rgba(0,125,195,0.15); }
+.connect-info { flex: 1; }
+.connect-name { font-size: 14px; font-weight: 500; }
+.connect-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.connect-btn { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-family: var(--mono); cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--text2); transition: all 0.2s; white-space: nowrap; }
+.connect-btn:hover { border-color: var(--text3); color: var(--text); }
+.connect-btn.connected { border-color: rgba(62,207,142,0.3); color: var(--green); background: var(--green-dim); }
+.connect-note { font-size: 12px; color: var(--text3); line-height: 1.6; padding: 12px; background: var(--bg3); border-radius: 8px; margin-top: 8px; font-family: var(--mono); }
+
+/* Customize */
+.customize-section { margin-bottom: 20px; }
+.customize-title { font-size: 12px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+.ai-chat-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.ai-messages { min-height: 160px; max-height: 300px; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ai-msg { max-width: 88%; padding: 9px 13px; border-radius: 12px; font-size: 13px; line-height: 1.55; }
+.ai-msg.user { align-self: flex-end; background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+.ai-msg.bot { align-self: flex-start; background: var(--bg3); color: var(--text); border-bottom-left-radius: 4px; }
+.ai-msg.bot.loading { color: var(--text3); font-family: var(--mono); font-size: 12px; }
+.ai-input-row { display: flex; border-top: 1px solid var(--border); }
+.ai-input-row input { flex: 1; background: none; border: none; padding: 12px 14px; font-size: 13px; color: var(--text); font-family: var(--sans); outline: none; }
+.ai-input-row input::placeholder { color: var(--text3); }
+.ai-input-row button { padding: 10px 16px; background: var(--blue); border: none; color: #fff; font-family: var(--mono); font-size: 12px; cursor: pointer; border-left: 1px solid var(--border); }
+
+/* Coach */
+.coach-chat-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.coach-messages { min-height: 200px; max-height: 400px; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; z-index: 100; backdrop-filter: blur(4px); }
+.modal-sheet { background: var(--bg2); border-radius: 20px 20px 0 0; padding: 20px; width: 100%; padding-bottom: calc(var(--safe-bottom) + 20px); border-top: 1px solid var(--border); }
+.modal-handle { width: 36px; height: 4px; background: var(--bg4); border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 14px; font-family: var(--mono); }
+.modal-input { width: 100%; background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 14px; font-size: 16px; font-family: var(--mono); color: var(--text); outline: none; margin-bottom: 12px; }
+.modal-input:focus { border-color: var(--blue); }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); }
+.btn-cancel { background: none; color: var(--text2); }
+.btn-save { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn-clear { background: none; color: var(--red); border-color: rgba(255,95,95,0.3); }
+
+/* Misc */
+.tag { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 2px 8px; border-radius: 20px; }
+.tag-blue { background: var(--blue-dim); color: var(--blue); }
+.tag-green { background: var(--green-dim); color: var(--green); }
+input[type=file] { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">Training Hub</div>
+        <div class="header-race">Cheltenham Half</div>
+        <div class="header-meta">Target: <span style="color:var(--blue);font-weight:500;" id="hdr-target">1:25:00</span> &nbsp;·&nbsp; <span id="hdr-pace">4:02/km</span></div>
+      </div>
+      <div class="header-countdown">
+        <div class="header-days" id="days-out">—</div>
+        <div class="header-days-label">days to go</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('plan')">Plan</button>
+    <button class="tab" onclick="switchTab('pbs')">PBs</button>
+    <button class="tab" onclick="switchTab('progress')">Progress</button>
+    <button class="tab" onclick="switchTab('routes')">Routes</button>
+    <button class="tab" onclick="switchTab('connect')">Connect</button>
+    <button class="tab" onclick="switchTab('coach')">Coach</button>
+    <button class="tab" onclick="switchTab('customize')">Customize</button>
+  </div>
+
+  <div class="content">
+    <div id="panel-plan" class="panel active"></div>
+
+    <div id="panel-pbs" class="panel">
+      <div class="card">
+        <div class="card-label">Personal bests — tap to edit</div>
+        <div class="pb-grid" id="pb-grid"></div>
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <div class="card-label">Target splits</div>
+        <div style="display:flex;flex-direction:column;gap:6px;" id="target-splits"></div>
+      </div>
+    </div>
+
+    <div id="panel-progress" class="panel">
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="card">
+        <div class="card-label">Overall completion</div>
+        <div class="progress-header"><span class="progress-label">All 12 weeks</span><span class="progress-val" id="overall-pct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="overall-bar" style="background:var(--blue);width:0%"></div></div>
+        <div id="weekly-bars"></div>
+      </div>
+    </div>
+
+    <div id="panel-routes" class="panel">
+      <div class="route-upload-zone" id="upload-zone" onclick="document.getElementById('gpx-input').click()">
+        <input type="file" id="gpx-input" accept=".gpx,.fit,.tcx" multiple onchange="handleRouteUpload(event)"/>
+        <div class="route-upload-icon">📍</div>
+        <div class="route-upload-title">Upload GPX / FIT / TCX</div>
+        <div class="route-upload-sub">Tap to choose files · drag &amp; drop supported</div>
+      </div>
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-label">Garmin transfer</div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px;">To send routes to your Garmin: connect your device via USB, then tap "Send to Garmin" on any route below. On mobile, use <strong style="color:var(--text)">Garmin Connect</strong> or <strong style="color:var(--text)">Garmin Express</strong> to sync — tap the button to open the app.</p>
+        <button class="connect-btn" style="width:100%;" onclick="openGarminConnect()">Open Garmin Connect ↗</button>
+      </div>
+      <div class="route-list" id="route-list"></div>
+    </div>
+
+    <div id="panel-connect" class="panel">
+      <div class="card">
+        <div class="card-label">Connected services</div>
+        <div class="connect-item">
+          <div class="connect-logo strava-logo">🟠</div>
+          <div class="connect-info">
+            <div class="connect-name">Strava</div>
+            <div class="connect-desc">Auto-import runs, sync your times</div>
+          </div>
+          <button class="connect-btn" id="strava-btn" onclick="connectStrava()">Connect</button>
+        </div>
+        <div class="connect-item">
+          <div class="connect-logo garmin-logo">🔵</div>
+          <div class="connect-info">
+            <div class="connect-name">Garmin Connect</div>
+            <div class="connect-desc">Push routes, pull activity data</div>
+          </div>
+          <button class="connect-btn" id="garmin-btn" onclick="connectGarmin()">Connect</button>
+        </div>
+        <div class="connect-note">
+          ⚡ Note: Full OAuth integration with Strava and Garmin requires a small backend. The connect buttons will guide you to the official apps. For automatic sync, deploy this app to Vercel and add your API keys in the .env file (see README).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Import from Strava</div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;">After connecting Strava, your recent runs will appear here and you can map them to plan sessions.</p>
+        <button class="connect-btn" style="width:100%;" onclick="openStrava()">View recent activities on Strava ↗</button>
+      </div>
+    </div>
+
+    <div id="panel-coach" class="panel">
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-label">AI running coach</div>
+        <div class="coach-chat-wrap">
+          <div class="coach-messages" id="coach-messages">
+            <div class="ai-msg bot">Hey! I'm your AI running coach for Cheltenham. I know your goal (sub-1:25), your training plan, and your PBs. Ask me anything — pacing, sessions, recovery, race strategy.</div>
+          </div>
+          <div class="ai-input-row">
+            <input type="text" id="coach-input" placeholder="Ask your coach..." onkeydown="if(event.key==='Enter')sendCoach()"/>
+            <button onclick="sendCoach()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-customize" class="panel">
+      <div class="customize-section">
+        <div class="customize-title">Update your app with AI</div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px;">Describe any change you want — new sessions, different target, extra features. The AI will update the app and you can download the new version.</p>
+        <div class="ai-chat-wrap">
+          <div class="ai-messages" id="customize-messages">
+            <div class="ai-msg bot">Tell me what you'd like to change about your training app. I can update sessions, targets, add new features, change the layout — anything.</div>
+          </div>
+          <div class="ai-input-row">
+            <input type="text" id="customize-input" placeholder="e.g. add a week 13 recovery week..." onkeydown="if(event.key==='Enter')sendCustomize()"/>
+            <button onclick="sendCustomize()">Update</button>
+          </div>
+        </div>
+      </div>
+      <div class="customize-section">
+        <div class="customize-title">Manual settings</div>
+        <div class="card">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Race date</div>
+              <input type="date" id="setting-race-date" class="modal-input" style="margin:0;" value="2026-09-13" onchange="saveSetting('raceDate',this.value)"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Target time</div>
+              <input type="text" id="setting-target" class="modal-input" style="margin:0;" placeholder="1:25:00" value="1:25:00" onchange="saveSetting('targetTime',this.value)"/>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Your name</div>
+              <input type="text" id="setting-name" class="modal-input" style="margin:0;" placeholder="Runner" onchange="saveSetting('name',this.value)"/>
+            </div>
+            <button onclick="exportData()" style="background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Export all data (JSON)</button>
+            <button onclick="resetData()" style="background:none;border:1px solid rgba(255,95,95,0.3);color:var(--red);border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Reset all data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+const PLAN = [
+  { week:1, phase:1, label:'Aerobic foundation', runs:[
+    {id:'w1r1',name:'Easy run',desc:'10km @ ~5:05/km'},
+    {id:'w1r2',name:'Tempo',desc:'8km · 20min @ 4:18/km'},
+    {id:'w1r3',name:'Long run',desc:'16km easy, last 3km @ 4:30/km'},
+  ]},
+  { week:2, phase:1, label:'Aerobic foundation', runs:[
+    {id:'w2r1',name:'Easy run',desc:'11km @ easy pace'},
+    {id:'w2r2',name:'Tempo',desc:'8km · 25min @ 4:15/km'},
+    {id:'w2r3',name:'Long run',desc:'17km easy'},
+    {id:'w2r4',name:'Easy + strides',desc:'6km easy · 6×80m strides'},
+  ]},
+  { week:3, phase:1, label:'Aerobic foundation', runs:[
+    {id:'w3r1',name:'Easy run',desc:'12km @ easy pace'},
+    {id:'w3r2',name:'Tempo',desc:'10km · 28min @ 4:12/km'},
+    {id:'w3r3',name:'Long run',desc:'18km easy, last 4km @ 4:30/km'},
+    {id:'w3r4',name:'Easy + strides',desc:'6km easy · 6×80m strides'},
+  ]},
+  { week:4, phase:1, label:'Recovery week', runs:[
+    {id:'w4r1',name:'Easy run',desc:'8km very easy'},
+    {id:'w4r2',name:'Light tempo',desc:'6km · 15min @ 4:20/km'},
+    {id:'w4r3',name:'Long run',desc:'14km easy'},
+  ]},
+  { week:5, phase:2, label:'Race-specific work', runs:[
+    {id:'w5r1',name:'Easy run',desc:'10km easy'},
+    {id:'w5r2',name:'Intervals',desc:'6×1km @ 3:57/km · 90s rest'},
+    {id:'w5r3',name:'Long run',desc:'19km · 8km @ goal pace 4:02/km'},
+    {id:'w5r4',name:'Recovery',desc:'7km very easy'},
+  ]},
+  { week:6, phase:2, label:'Race-specific work', runs:[
+    {id:'w6r1',name:'Easy run',desc:'11km easy'},
+    {id:'w6r2',name:'Intervals',desc:'4×2km @ 4:05/km · 2min rest'},
+    {id:'w6r3',name:'Long run',desc:'20km · 10km @ goal pace'},
+    {id:'w6r4',name:'Recovery',desc:'7km very easy'},
+  ]},
+  { week:7, phase:2, label:'Race-specific work', runs:[
+    {id:'w7r1',name:'Easy run',desc:'12km easy'},
+    {id:'w7r2',name:'Intervals',desc:'8×800m @ 3:52/km · 75s rest'},
+    {id:'w7r3',name:'Long run',desc:'21km · 12km @ goal pace'},
+    {id:'w7r4',name:'Easy + strides',desc:'6km easy · 8×80m strides'},
+  ]},
+  { week:8, phase:2, label:'Recovery week', runs:[
+    {id:'w8r1',name:'Easy run',desc:'8km easy'},
+    {id:'w8r2',name:'Tempo',desc:'6km · 20min @ 4:10/km'},
+    {id:'w8r3',name:'Long run',desc:'15km easy'},
+  ]},
+  { week:9, phase:2, label:'Peak week', runs:[
+    {id:'w9r1',name:'Easy run',desc:'12km easy'},
+    {id:'w9r2',name:'Intervals',desc:'5×1.5km @ 4:00/km · 90s rest'},
+    {id:'w9r3',name:'Long run',desc:'22km · 14km @ goal pace'},
+    {id:'w9r4',name:'Recovery',desc:'7km easy'},
+  ]},
+  { week:10, phase:3, label:'Taper begins', runs:[
+    {id:'w10r1',name:'Easy run',desc:'10km easy'},
+    {id:'w10r2',name:'Intervals',desc:'4×1km @ 3:55/km — stay sharp'},
+    {id:'w10r3',name:'Long run',desc:'16km easy'},
+  ]},
+  { week:11, phase:3, label:'Taper — reduce volume', runs:[
+    {id:'w11r1',name:'Easy run',desc:'8km easy'},
+    {id:'w11r2',name:'Race pace',desc:'4×1km @ 4:02/km race pace'},
+    {id:'w11r3',name:'Easy + strides',desc:'6km easy + strides'},
+  ]},
+  { week:12, phase:3, label:'Race week 🏁', runs:[
+    {id:'w12r1',name:'Easy run',desc:'5km easy — Monday'},
+    {id:'w12r2',name:'Activation',desc:'3km easy + 4×80m strides — Wednesday'},
+    {id:'w12r3',name:'RACE DAY',desc:'Cheltenham Half Marathon · Goal: 1:25:00'},
+  ]},
+];
+
+const phaseColors = ['','var(--blue)','var(--amber)','var(--red)'];
+const phaseLabels = ['','ph1','ph2','ph3'];
+const phaseName = ['','Base','Race-specific','Taper'];
+
+let state = {
+  checked: {}, times: {},
+  pbs: {'5K':'','10K':'','15K':'','21.1K':'1:33:03'},
+  routes: [],
+  settings: { raceDate:'2026-09-13', targetTime:'1:25:00', name:'' }
+};
+try { const s = localStorage.getItem('chm_state_v2'); if(s) state = {...state, ...JSON.parse(s)}; } catch(e){}
+
+function save() { try { localStorage.setItem('chm_state_v2', JSON.stringify(state)); } catch(e){} }
+function saveSetting(k,v) { state.settings[k]=v; save(); updateHeader(); }
+
+function updateHeader() {
+  const d = new Date(state.settings.raceDate);
+  const diff = Math.max(0, Math.ceil((d - new Date()) / 86400000));
+  document.getElementById('days-out').textContent = diff;
+  document.getElementById('hdr-target').textContent = state.settings.targetTime || '1:25:00';
+}
+updateHeader();
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    const names = ['plan','pbs','progress','routes','connect','coach','customize'];
+    el.classList.toggle('active', names[i]===t);
+  });
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='pbs') renderPBs();
+  if(t==='progress') renderProgress();
+  if(t==='routes') renderRoutes();
+}
+
+// ── PLAN ──
+function renderPlan() {
+  const c = document.getElementById('panel-plan');
+  c.innerHTML = '';
+  PLAN.forEach(week => {
+    const done = week.runs.filter(r => state.checked[r.id]).length;
+    const div = document.createElement('div');
+    div.className = 'week-card';
+    div.id = 'week-'+week.week;
+    const dots = week.runs.map(r => `<div class="week-dot${state.checked[r.id]?' done':''}"></div>`).join('');
+    div.innerHTML = `
+      <div class="week-header" onclick="toggleWeek(${week.week})">
+        <div class="week-left">
+          <span class="week-num">W${String(week.week).padStart(2,'0')}</span>
+          <span class="week-name">${week.label}</span>
+          <span class="week-phase ${phaseLabels[week.phase]}">${phaseName[week.phase]}</span>
+        </div>
+        <div class="week-right">
+          <div class="week-dots">${dots}</div>
+          <span class="week-chevron">▾</span>
+        </div>
+      </div>
+      <div class="week-runs">
+        ${week.runs.map(r => `
+          <div class="run-row" id="row-${r.id}">
+            <div class="run-cb${state.checked[r.id]?' checked':''}" onclick="toggleRun('${r.id}')"></div>
+            <div class="run-info" style="${state.checked[r.id]?'opacity:0.45;':''}">
+              <div class="run-name">${r.name}</div>
+              <div class="run-desc">${r.desc}</div>
+            </div>
+            <button class="run-time-btn${state.times[r.id]?' logged':''}" onclick="openTimeModal('${r.id}','${r.name}')">
+              ${state.times[r.id]||'+ time'}
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    c.appendChild(div);
+  });
+}
+renderPlan();
+
+function toggleWeek(n) {
+  document.getElementById('week-'+n).classList.toggle('open');
+}
+function toggleRun(id) {
+  state.checked[id] = !state.checked[id];
+  save(); renderPlan();
+}
+function openTimeModal(id, name) {
+  const existing = state.times[id]||'';
+  const el = document.createElement('div');
+  el.className = 'modal-overlay';
+  el.innerHTML = `
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Log time</div>
+      <div class="modal-sub">${name}</div>
+      <input class="modal-input" id="time-inp" type="text" placeholder="48:32 or 1:04:15" value="${existing}" inputmode="numeric"/>
+      <div class="modal-btns">
+        ${existing?`<button class="btn-clear" onclick="clearTime('${id}')">Clear</button>`:''}
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveTime('${id}')">Save</button>
+      </div>
+    </div>
+  `;
+  el.addEventListener('click', e => { if(e.target===el) closeModal(); });
+  document.getElementById('modal-root').appendChild(el);
+  setTimeout(()=>document.getElementById('time-inp')?.focus(),100);
+}
+function saveTime(id) { const v=document.getElementById('time-inp')?.value?.trim(); if(v){state.times[id]=v;save();} closeModal(); renderPlan(); }
+function clearTime(id) { delete state.times[id]; save(); closeModal(); renderPlan(); }
+function closeModal() { document.getElementById('modal-root').innerHTML=''; }
+
+// ── PBs ──
+const pbDists = ['5K','10K','15K','21.1K'];
+const pbKm = {'5K':5,'10K':10,'15K':15,'21.1K':21.1};
+function timeToSecs(t) {
+  if(!t) return 0;
+  const p = t.split(':').map(Number);
+  if(p.length===2) return p[0]*60+p[1];
+  if(p.length===3) return p[0]*3600+p[1]*60+p[2];
+  return 0;
+}
+function secsToPace(secs, km) { const s=Math.round(secs/km); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}/km`; }
+
+function renderPBs() {
+  const g = document.getElementById('pb-grid');
+  g.innerHTML = pbDists.map(d => {
+    const v = state.pbs[d]||'';
+    const pace = v ? secsToPace(timeToSecs(v), pbKm[d]) : '';
+    return `
+      <div class="pb-item" onclick="editPB('${d}')">
+        <div class="pb-dist">${d}</div>
+        <div class="pb-val${v?'':' empty'}">${v||'Set PB'}</div>
+        ${pace?`<div class="pb-pace">${pace}</div>`:''}
+        <div class="pb-edit-row" id="pbed-${d}">
+          <input type="text" id="pbinp-${d}" placeholder="mm:ss" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){savePB('${d}');event.stopPropagation()}" value="${v}"/>
+          <button onclick="savePB('${d}');event.stopPropagation()">✓</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  // target splits
+  const target = state.settings.targetTime || '1:25:00';
+  const ts = timeToSecs(target);
+  const splits = [5,10,15,21.1];
+  document.getElementById('target-splits').innerHTML = splits.map(km => {
+    const t = Math.round(ts * (km/21.1975));
+    const m=Math.floor(t/60), s=t%60;
+    return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);font-family:var(--mono);">
+      <span style="color:var(--text2)">${km===21.1?'21.1K finish':km+'K split'}</span>
+      <span>${m}:${String(s).padStart(2,'0')}</span>
+    </div>`;
+  }).join('');
+}
+
+function editPB(d) {
+  document.querySelectorAll('.pb-edit-row').forEach(el => el.classList.remove('show'));
+  const el = document.getElementById('pbed-'+d);
+  el.classList.add('show');
+  setTimeout(()=>document.getElementById('pbinp-'+d)?.focus(),50);
+}
+function savePB(d) {
+  const v=document.getElementById('pbinp-'+d)?.value?.trim();
+  if(v) state.pbs[d]=v;
+  save(); renderPBs();
+}
+
+// ── PROGRESS ──
+function renderProgress() {
+  const allRuns = PLAN.flatMap(w=>w.runs);
+  const done = allRuns.filter(r=>state.checked[r.id]).length;
+  const total = allRuns.length;
+  const pct = total?Math.round(done/total*100):0;
+  document.getElementById('overall-pct').textContent=pct+'%';
+  document.getElementById('overall-bar').style.width=pct+'%';
+
+  const logged = Object.keys(state.times).length;
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-cell"><div class="stat-n" style="color:var(--green)">${done}</div><div class="stat-l">completed</div></div>
+    <div class="stat-cell"><div class="stat-n" style="color:var(--blue)">${logged}</div><div class="stat-l">times logged</div></div>
+    <div class="stat-cell"><div class="stat-n" style="color:var(--amber)">${total-done}</div><div class="stat-l">remaining</div></div>
+  `;
+  document.getElementById('weekly-bars').innerHTML = PLAN.map(week=>{
+    const d=week.runs.filter(r=>state.checked[r.id]).length;
+    const p=Math.round(d/week.runs.length*100);
+    const col=phaseColors[week.phase];
+    return `<div style="margin-bottom:8px;">
+      <div class="progress-header"><span class="progress-label" style="font-family:var(--mono);font-size:11px;">W${week.week} — ${week.label}</span><span class="progress-val">${d}/${week.runs.length}</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${p}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── ROUTES ──
+function renderRoutes() {
+  const list = document.getElementById('route-list');
+  if(!state.routes.length) {
+    list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px;font-family:var(--mono);">No routes uploaded yet</div>';
+    return;
+  }
+  list.innerHTML = state.routes.map((r,i)=>`
+    <div class="route-item">
+      <div class="route-icon">📍</div>
+      <div class="route-info">
+        <div class="route-name">${r.name}</div>
+        <div class="route-meta">${r.type} · ${r.size}</div>
+      </div>
+      <div class="route-actions">
+        <button class="route-btn garmin" onclick="sendToGarmin(${i})">Garmin</button>
+        <button class="route-btn" onclick="deleteRoute(${i})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function handleRouteUpload(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => {
+    state.routes.push({ name:f.name, type:f.name.split('.').pop().toUpperCase(), size: (f.size/1024).toFixed(0)+'KB', data: null });
+  });
+  save(); renderRoutes();
+  e.target.value='';
+}
+
+function deleteRoute(i) { state.routes.splice(i,1); save(); renderRoutes(); }
+
+function sendToGarmin(i) {
+  const r = state.routes[i];
+  alert(`To send "${r.name}" to your Garmin:\n\n1. Connect Garmin via USB\n2. Copy the file to: Garmin/NewFiles/\n\nOr open Garmin Connect and import the file there.`);
+}
+function openGarminConnect() { window.open('https://connect.garmin.com','_blank'); }
+
+// Drag and drop
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', ()=>zone.classList.remove('drag'));
+zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('drag'); const dt={files:e.dataTransfer.files}; handleRouteUpload({target:dt,target:{files:e.dataTransfer.files,value:''}}); });
+
+// ── CONNECT ──
+function connectStrava() {
+  window.open('https://www.strava.com/settings/apps','_blank');
+  document.getElementById('strava-btn').textContent='Linked ✓';
+  document.getElementById('strava-btn').className='connect-btn connected';
+}
+function connectGarmin() {
+  window.open('https://connect.garmin.com','_blank');
+  document.getElementById('garmin-btn').textContent='Linked ✓';
+  document.getElementById('garmin-btn').className='connect-btn connected';
+}
+function openStrava() { window.open('https://www.strava.com/athlete/training','_blank'); }
+
+// ── COACH ──
+async function sendCoach() {
+  const input = document.getElementById('coach-input');
+  const msg = input.value.trim(); if(!msg) return;
+  input.value='';
+  const container = document.getElementById('coach-messages');
+  container.innerHTML += `<div class="ai-msg user">${esc(msg)}</div>`;
+  const load = document.createElement('div');
+  load.className='ai-msg bot loading'; load.textContent='thinking…';
+  container.appendChild(load); container.scrollTop=99999;
+
+  const done = PLAN.flatMap(w=>w.runs).filter(r=>state.checked[r.id]).length;
+  const total = PLAN.flatMap(w=>w.runs).length;
+  const pbStr = Object.entries(state.pbs).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ');
+  const sys = `You are an expert running coach. The athlete is training for the Cheltenham Half Marathon in September 2026, targeting sub-1:25:00 (current PB: ${state.pbs['21.1K']||'1:33:03'}). Target pace: 4:02/km. They run 3-4x/week. Training progress: ${done}/${total} runs done. PBs: ${pbStr||'not set'}. Give concise, practical advice in 2-4 sentences.`;
+
+  const history=[];
+  container.querySelectorAll('.ai-msg:not(.loading)').forEach(el=>{
+    history.push({role:el.classList.contains('user')?'user':'assistant',content:el.textContent});
+  });
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:[...history,{role:'user',content:msg}]})});
+    const d = await res.json();
+    load.className='ai-msg bot'; load.textContent=d.content?.[0]?.text||'Try again!';
+  } catch(e) { load.className='ai-msg bot'; load.textContent='Connection error. Try again.'; }
+  container.scrollTop=99999;
+}
+
+// ── CUSTOMIZE ──
+async function sendCustomize() {
+  const input = document.getElementById('customize-input');
+  const msg = input.value.trim(); if(!msg) return;
+  input.value='';
+  const container = document.getElementById('customize-messages');
+  container.innerHTML += `<div class="ai-msg user">${esc(msg)}</div>`;
+  const load = document.createElement('div');
+  load.className='ai-msg bot loading'; load.textContent='updating your app…';
+  container.appendChild(load); container.scrollTop=99999;
+
+  const currentHTML = document.documentElement.outerHTML;
+  const sys = `You are a code assistant helping update a running training PWA. The user wants to modify their app. Describe the change you've made in plain English (1-2 sentences), then provide ONLY the specific code change needed as a diff or replacement snippet. Do not reproduce the entire HTML. Be concise and practical. If they ask for something requiring a full rebuild, suggest they describe the change and you'll provide the key code snippet to paste in.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sys,messages:[{role:'user',content:`My current app is a running training PWA. I want to make this change: ${msg}\n\nPlease describe the change and provide the specific code I need to update.`}]})});
+    const d = await res.json();
+    load.className='ai-msg bot'; load.textContent=d.content?.[0]?.text||'Try again!';
+  } catch(e) { load.className='ai-msg bot'; load.textContent='Connection error.'; }
+  container.scrollTop=99999;
+}
+
+// ── UTILS ──
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cheltenham-hm-data.json'; a.click();
+}
+function resetData() {
+  if(confirm('Reset all data? This cannot be undone.')) { localStorage.removeItem('chm_state_v2'); location.reload(); }
+}
+
+// Service Worker registration
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
