@@ -255,32 +255,48 @@ input[type=file] { display: none; }
     </div>
 
     <div id="panel-connect" class="panel">
-      <div class="card">
-        <div class="card-label">Connected services</div>
-        <div class="connect-item">
-          <div class="connect-logo strava-logo">🟠</div>
-          <div class="connect-info">
-            <div class="connect-name">Strava</div>
-            <div class="connect-desc">Auto-import runs, sync your times</div>
+      <div class="card" id="strava-connect-card">
+        <div class="card-label">Strava</div>
+        <div id="strava-disconnected">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+            <div class="connect-logo strava-logo" style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(252,76,2,0.15);">🏃</div>
+            <div>
+              <div style="font-size:14px;font-weight:500;">Connect Strava</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px;">Auto-import your runs into your training plan</div>
+            </div>
           </div>
-          <button class="connect-btn" id="strava-btn" onclick="connectStrava()">Connect</button>
+          <button onclick="connectStrava()" style="width:100%;padding:12px;background:#fc4c02;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);">Connect with Strava</button>
         </div>
-        <div class="connect-item">
-          <div class="connect-logo garmin-logo">🔵</div>
-          <div class="connect-info">
-            <div class="connect-name">Garmin Connect</div>
-            <div class="connect-desc">Push routes, pull activity data</div>
+        <div id="strava-connected" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:rgba(252,76,2,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;">🏃</div>
+              <div>
+                <div style="font-size:13px;font-weight:500;" id="strava-athlete-name">Connected</div>
+                <div style="font-size:11px;color:var(--green);font-family:var(--mono);">● connected</div>
+              </div>
+            </div>
+            <button onclick="disconnectStrava()" style="padding:6px 12px;border:1px solid rgba(255,95,95,0.3);border-radius:8px;background:none;color:var(--red);font-size:12px;cursor:pointer;font-family:var(--mono);">Disconnect</button>
           </div>
-          <button class="connect-btn" id="garmin-btn" onclick="connectGarmin()">Connect</button>
-        </div>
-        <div class="connect-note">
-          ⚡ Note: Full OAuth integration with Strava and Garmin requires a small backend. The connect buttons will guide you to the official apps. For automatic sync, deploy this app to Vercel and add your API keys in the .env file (see README).
+          <button onclick="fetchStravaActivities()" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;font-family:var(--mono);" id="fetch-btn">Sync recent runs ↻</button>
         </div>
       </div>
+
+      <div class="card" id="strava-activities-card" style="display:none;">
+        <div class="card-label">Recent Strava runs</div>
+        <div id="strava-activities-list"></div>
+      </div>
+
       <div class="card">
-        <div class="card-label">Import from Strava</div>
-        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;">After connecting Strava, your recent runs will appear here and you can map them to plan sessions.</p>
-        <button class="connect-btn" style="width:100%;" onclick="openStrava()">View recent activities on Strava ↗</button>
+        <div class="card-label">Garmin</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+          <div style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(0,125,195,0.15);">⌚</div>
+          <div>
+            <div style="font-size:14px;font-weight:500;">Garmin Connect</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px;">Upload routes via the Routes tab, sync via Garmin Connect app</div>
+          </div>
+        </div>
+        <button onclick="window.open('https://connect.garmin.com','_blank')" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13px;cursor:pointer;font-family:var(--mono);">Open Garmin Connect ↗</button>
       </div>
     </div>
 
@@ -443,6 +459,7 @@ function switchTab(t) {
   if(t==='pbs') renderPBs();
   if(t==='progress') renderProgress();
   if(t==='routes') renderRoutes();
+  if(t==='connect') renderStravaUI();
 }
 
 // ── PLAN ──
@@ -645,18 +662,122 @@ zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('d
 zone.addEventListener('dragleave', ()=>zone.classList.remove('drag'));
 zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('drag'); const dt={files:e.dataTransfer.files}; handleRouteUpload({target:dt,target:{files:e.dataTransfer.files,value:''}}); });
 
-// ── CONNECT ──
+// ── STRAVA OAUTH ──
+const STRAVA_CLIENT_ID = '224531';
+const STRAVA_REDIRECT = window.location.origin + '/api/strava-callback';
+
 function connectStrava() {
-  window.open('https://www.strava.com/settings/apps','_blank');
-  document.getElementById('strava-btn').textContent='Linked ✓';
-  document.getElementById('strava-btn').className='connect-btn connected';
+  const scope = 'read,activity:read_all';
+  const url = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&response_type=code&scope=${scope}`;
+  window.location.href = url;
 }
-function connectGarmin() {
-  window.open('https://connect.garmin.com','_blank');
-  document.getElementById('garmin-btn').textContent='Linked ✓';
-  document.getElementById('garmin-btn').className='connect-btn connected';
+
+function disconnectStrava() {
+  delete state.strava;
+  save();
+  renderStravaUI();
 }
-function openStrava() { window.open('https://www.strava.com/athlete/training','_blank'); }
+
+function renderStravaUI() {
+  const connected = state.strava?.access_token;
+  document.getElementById('strava-disconnected').style.display = connected ? 'none' : 'block';
+  document.getElementById('strava-connected').style.display = connected ? 'block' : 'none';
+  document.getElementById('strava-activities-card').style.display = connected ? 'block' : 'none';
+  if (connected && state.strava.athlete_name) {
+    document.getElementById('strava-athlete-name').textContent = state.strava.athlete_name;
+  }
+}
+
+async function ensureFreshToken() {
+  if (!state.strava) return null;
+  const now = Math.floor(Date.now() / 1000);
+  if (state.strava.expires_at > now + 60) return state.strava.access_token;
+  try {
+    const res = await fetch('/api/strava-refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: state.strava.refresh_token })
+    });
+    const data = await res.json();
+    state.strava.access_token = data.access_token;
+    state.strava.refresh_token = data.refresh_token;
+    state.strava.expires_at = data.expires_at;
+    save();
+    return data.access_token;
+  } catch(e) { return null; }
+}
+
+async function fetchStravaActivities() {
+  const btn = document.getElementById('fetch-btn');
+  btn.textContent = 'Syncing…';
+  const token = await ensureFreshToken();
+  if (!token) { btn.textContent = 'Sync recent runs ↻'; return; }
+  try {
+    const res = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=20', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const activities = await res.json();
+    const runs = activities.filter(a => a.type === 'Run' || a.sport_type === 'Run');
+    renderStravaActivities(runs);
+    btn.textContent = 'Sync recent runs ↻';
+  } catch(e) { btn.textContent = 'Sync failed — try again'; }
+}
+
+function renderStravaActivities(runs) {
+  const list = document.getElementById('strava-activities-list');
+  if (!runs.length) { list.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:12px;">No recent runs found</div>'; return; }
+  list.innerHTML = runs.map(r => {
+    const date = new Date(r.start_date_local).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+    const km = (r.distance / 1000).toFixed(1);
+    const mins = Math.floor(r.moving_time / 60);
+    const secs = r.moving_time % 60;
+    const time = `${mins}:${String(secs).padStart(2,'0')}`;
+    const pacePerKm = r.distance > 0 ? r.moving_time / (r.distance / 1000) : 0;
+    const pm = Math.floor(pacePerKm / 60);
+    const ps = Math.round(pacePerKm % 60);
+    const pace = pacePerKm > 0 ? `${pm}:${String(ps).padStart(2,'0')}/km` : '';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
+          <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:2px;">${date} · ${km}km · ${pace}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:13px;font-family:var(--mono);color:var(--blue);">${time}</div>
+          <button onclick="logStravaRun('${time}','${km}km ${r.name}')" style="font-size:10px;font-family:var(--mono);padding:3px 8px;border:1px solid var(--border2);border-radius:6px;background:none;color:var(--text3);cursor:pointer;margin-top:3px;">+ log</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function logStravaRun(time, name) {
+  alert(`To log this run, go to the Plan tab, find the matching session and tap "+ time" to enter ${time}.`);
+}
+
+// Handle OAuth callback on page load
+function handleStravaCallback() {
+  const hash = window.location.hash;
+  if (hash.includes('strava=')) {
+    try {
+      const b64 = hash.split('strava=')[1];
+      const params = new URLSearchParams(atob(b64));
+      state.strava = {
+        access_token: params.get('access_token'),
+        refresh_token: params.get('refresh_token'),
+        expires_at: parseInt(params.get('expires_at')),
+        athlete_name: params.get('athlete_name'),
+        athlete_id: params.get('athlete_id'),
+      };
+      save();
+      window.location.hash = '';
+      switchTab('connect');
+    } catch(e) {}
+  }
+  if (window.location.search.includes('strava_error')) {
+    window.history.replaceState({}, '', '/');
+  }
+}
+handleStravaCallback();
 
 // ── COACH ──
 async function sendCoach() {
